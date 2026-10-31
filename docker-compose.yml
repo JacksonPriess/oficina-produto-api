@@ -1,0 +1,57 @@
+# Essa configuração define um container PostgreSQL e um volume dedicados ao catálogo de produtos.
+
+name: catalogo-produto
+
+services:
+  postgres-produtos:
+    image: postgres:16-alpine
+    container_name: catalogo-produto-postgres
+    environment:
+      POSTGRES_DB: oficina_produtos_db
+      POSTGRES_USER: dbadmin
+      POSTGRES_PASSWORD: adminpassword
+      TZ: America/Sao_Paulo
+    ports:
+      - "15434:5432"
+    volumes:
+      - catalogo_produtos_pg_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U dbadmin -d oficina_produtos_db" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: catalogo-produto-api
+    ports:
+      - "8081:8081"
+    environment:
+      # Credenciais exclusivas do ambiente local via Docker Compose
+      CATALOGO_API_KEY: ${CATALOGO_API_KEY:-chave-secreta-api-catalogo}
+      SPRING_PROFILES_ACTIVE: dev,rabbit
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-produtos:5432/oficina_produtos_db
+      SPRING_DATASOURCE_USERNAME: dbadmin
+      SPRING_DATASOURCE_PASSWORD: adminpassword
+      TZ: America/Sao_Paulo
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USERNAME: oficina
+      RABBITMQ_PASSWORD: oficina-local
+    networks:
+      - default
+      - dinoco
+    depends_on:
+      postgres-produtos:
+        condition: service_healthy
+    restart: unless-stopped
+
+networks:
+  dinoco:
+    external: true
+    name: dinoco-local
+
+volumes:
+  catalogo_produtos_pg_data:

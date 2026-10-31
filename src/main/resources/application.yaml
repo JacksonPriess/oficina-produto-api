@@ -1,0 +1,54 @@
+spring:
+  application:
+    name: catalogo-produto-api
+
+  profiles:
+    active: dev
+
+  datasource:
+    url: jdbc:postgresql://localhost:15434/oficina_produtos_db
+    username: dbadmin
+    password: adminpassword
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    # Desativa a auto-criação do Hibernate, pois o Flyway cuidará disso
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        # Formata o SQL no console para facilitar a leitura durante o debug
+        format_sql: true
+    show-sql: true
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    # Indica onde os scripts do Flyway ficarão (este é o padrão, mas é bom deixar explícito)
+    locations: classpath:db/migration
+
+# Logging estruturado em JSON
+logging:
+  structured:
+    format:
+      console: logstash
+
+# Configuração da porta da sua API Produtos (opcional, 8081 é o padrão)
+server:
+  port: 8081
+
+catalogo:
+  security:
+    api-key: ${CATALOGO_API_KEY:chave-secreta-api-catalogo}
+
+api:
+  security:
+    token:
+      secret: ${JWT_SECRET:minha-chave-secreta-de-desenvolvimento-local-1234567890}
+
+springdoc:
+  server-url: ${OPENAPI_SERVER_URL:http://localhost:8081}
+  swagger-ui:
+    persistAuthorization: true
+    tagsSorter: "alpha"
+
