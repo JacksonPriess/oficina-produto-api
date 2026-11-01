@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: catalogo-produto-api-config
+  labels:
+    app: catalogo-produto-api
+data:
+  SPRING_PROFILES_ACTIVE: "k8s,rabbit"
+  OPENAPI_SERVER_URL: "${OPENAPI_SERVER_URL}"
+  NEW_RELIC_APP_NAME: "catalogo-produto-api"
+  RABBITMQ_HOST: "rabbitmq"
+  RABBITMQ_PORT: "5672"
+  JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=60.0"
+  TZ: "America/Sao_Paulo"

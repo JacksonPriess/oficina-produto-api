@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: catalogo-produto-api-service
+  labels:
+    app: catalogo-produto-api
+spec:
+  type: LoadBalancer # Comunica com a AWS para provisionar um balanceador de carga externo
+  ports:
+  - port: 80          # Porta pública na internet (o utilizador acederá sem precisar digitar :8081)
+    targetPort: 8081  # Porta interna do contêiner para onde o tráfego será direcionado
+    protocol: TCP
+  selector:
+    app: catalogo-produto-api  # Encaminha o tráfego apenas para os pods que possuem esta label
