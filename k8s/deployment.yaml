@@ -1,0 +1,90 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: catalogo-produto-api-deployment
+  labels:
+    app: catalogo-produto-api
+spec:
+  replicas: 1 # Iniciar com 1 pod; o HPA controlará o resto
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
+  progressDeadlineSeconds: 900
+  selector:
+    matchLabels:
+      app: catalogo-produto-api
+  template:
+    metadata:
+      labels:
+        app: catalogo-produto-api
+    spec:
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 45
+      containers:
+      - name: catalogo-produto-api
+        # Substituído pela pipeline durante o deploy
+        image: ${DOCKER_IMAGE}
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8081 # Porta padrão interna exposta pelo Spring Boot
+        
+        # Injeta automaticamente todas as variáveis do ConfigMap e do Secret
+        envFrom:
+        - configMapRef:
+            name: catalogo-produto-api-config
+        - secretRef:
+            name: catalogo-produto-api-secret
+        - secretRef:
+            name: catalogo-produto-database-secret
+        - secretRef:
+            name: catalogo-integration-secret
+        env:
+        - name: RABBITMQ_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: rabbitmq-secret
+              key: username
+        - name: RABBITMQ_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: rabbitmq-secret
+              key: password
+            
+        startupProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - 'wget -q -T 3 -O /dev/null --header="X-API-Key: $CATALOGO_API_KEY" http://127.0.0.1:8081/actuator/health/liveness'
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 60
+        readinessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - 'wget -q -T 3 -O /dev/null --header="X-API-Key: $CATALOGO_API_KEY" http://127.0.0.1:8081/actuator/health/readiness'
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        livenessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - 'wget -q -T 3 -O /dev/null --header="X-API-Key: $CATALOGO_API_KEY" http://127.0.0.1:8081/actuator/health/liveness'
+          periodSeconds: 20
+          timeoutSeconds: 5
+          failureThreshold: 3
+
+        # CRUCIAL PARA O HPA: Sem estas definições, o Kubernetes não consegue calcular o escalonamento
+        resources:
+          requests:
+            cpu: "250m"    # Garante 0.25 de um núcleo de CPU para o arranque estável do Spring
+            memory: "512Mi" # Memória mínima inicial alocada
+          limits:
+            cpu: "500m"    # Teto máximo de utilização de processamento
+            memory: "1Gi"   # Teto máximo de memória para evitar vazamentos (OutOfMemory)
