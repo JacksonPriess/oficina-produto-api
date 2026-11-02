@@ -15,11 +15,13 @@ import com.dinoco.oficina.catalogoproduto.application.usecases.queries.buscarpor
 import com.dinoco.oficina.catalogoproduto.application.usecases.queries.buscarporid.BuscarProdutoPorIdUseCase;
 import com.dinoco.oficina.catalogoproduto.application.usecases.queries.buscarportermo.BuscarProdutoPorTermoHandler;
 import com.dinoco.oficina.catalogoproduto.application.usecases.queries.buscarportermo.BuscarProdutoPorTermoUseCase;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
+@Slf4j
 @Configuration
 public class ProdutoConfig {
 
@@ -30,7 +32,16 @@ public class ProdutoConfig {
                                                    PlatformTransactionManager transactionManager) {
         var handler = new CriarProdutoHandler(produtoCommandGateway, produtoQueryGateway, eventPublisher);
         var transaction = new TransactionTemplate(transactionManager);
-        return command -> transaction.execute(status -> handler.executar(command));
+        return command -> {
+            var output = transaction.execute(status -> handler.executar(command));
+
+            log.info(
+                    "evento=produto_e_outbox_criacao_sucesso produtoId={}",
+                    output.id()
+            );
+
+            return output;
+        };
     }
 
     @Bean

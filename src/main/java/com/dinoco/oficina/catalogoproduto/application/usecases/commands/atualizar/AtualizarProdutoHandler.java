@@ -3,7 +3,9 @@ package com.dinoco.oficina.catalogoproduto.application.usecases.commands.atualiz
 import com.dinoco.oficina.catalogoproduto.application.gateways.ProdutoCommandGateway;
 import com.dinoco.oficina.catalogoproduto.domain.Produto;
 import com.dinoco.oficina.exception.RecursoNaoEncontradoException;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class AtualizarProdutoHandler implements AtualizarProdutoUseCase {
 
     private final ProdutoCommandGateway produtoCommandGateway;
@@ -14,6 +16,12 @@ public class AtualizarProdutoHandler implements AtualizarProdutoUseCase {
 
     @Override
     public AtualizarProdutoOutput executar(AtualizarProdutoCommand command) {
+
+        log.debug(
+                "evento=produto_atualizacao_iniciado produtoId={} versao={}",
+                command.id(),
+                command.versao()
+        );
 
         Produto produto = produtoCommandGateway.buscarParaAlteracao(command.id())
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Produto não encontrado."));
@@ -30,6 +38,13 @@ public class AtualizarProdutoHandler implements AtualizarProdutoUseCase {
         );
 
         Produto produtoSalvo = produtoCommandGateway.salvar(produto);
+
+        log.info(
+                "evento=produto_atualizacao_sucesso produtoId={} versao={}",
+                produtoSalvo.getId(),
+                produtoSalvo.getVersao()
+        );
+
         return mapearParaOutput(produtoSalvo);
     }
 
