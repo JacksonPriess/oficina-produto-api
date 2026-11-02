@@ -6,8 +6,6 @@ import java.util.concurrent.TimeUnit;
 
 import com.dinoco.oficina.catalogoproduto.infrastructure.config.ProdutoRabbitConfig;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.amqp.core.*;
 import org.springframework.amqp.rabbit.connection.CorrelationData;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -17,8 +15,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
-@Component
 @Slf4j
+@Component
 public class ProdutoOutboxWorker {
 
     private final JdbcTemplate jdbc;
@@ -48,6 +46,13 @@ public class ProdutoOutboxWorker {
 
                 var evento = pendentes.getFirst();
 
+                log.debug(
+                        "evento=produto_evento_publicacao_inicio eventoId={} exchange={} routingKey={}",
+                        evento.id(),
+                        ProdutoRabbitConfig.EXCHANGE,
+                        ProdutoRabbitConfig.ROUTING_KEY
+                );
+
                 try {
                     var properties = new MessageProperties();
                     properties.setContentType(MessageProperties.CONTENT_TYPE_JSON);
@@ -65,13 +70,24 @@ public class ProdutoOutboxWorker {
                     if (!confirm.ack() || correlation.getReturned() != null)
                         throw new IllegalStateException("Broker rejeitou ou mensagem ficou sem fila de destino.");
 
+                    log.info(
+                            "evento=produto_evento_publicacao_confirmada eventoId={} exchange={} routingKey={}",
+                            evento.id(),
+                            ProdutoRabbitConfig.EXCHANGE,
+                            ProdutoRabbitConfig.ROUTING_KEY
+                    );
+
                     jdbc.update("UPDATE produto_outbox SET publicado_em=CURRENT_TIMESTAMP, ultimo_erro=NULL WHERE event_id=?", evento.id());
                 } catch (Exception e) {
 
                     if (e instanceof InterruptedException)
                         Thread.currentThread().interrupt();
 
-                    log.warn("Evento {} continua pendente de publicação", evento.id(), e);
+                    log.warn(
+                            "evento=produto_evento_publicacao_falha eventoId={}",
+                            evento.id(),
+                            e
+                    );
 
                     jdbc.update("""
                         UPDATE produto_outbox SET tentativas=tentativas+1,
@@ -81,7 +97,10 @@ public class ProdutoOutboxWorker {
                 }
             });
         } catch (Exception e) {
-            log.error("Falha na transação da outbox; evento permanece para recuperação", e);
+            log.error(
+                    "evento=produto_outbox_transacao_falha",
+                    e
+            );
         }
     }
 }
