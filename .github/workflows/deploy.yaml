@@ -51,6 +51,14 @@ jobs:
       - name: Executar testes e empacotar aplicação
         run: mvn clean package
 
+      - name: Publicar relatório de cobertura
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cobertura-oficina-produto-api
+          path: target/site/jacoco/
+          if-no-files-found: warn
+
       # ============================================================
       # CD
       # ============================================================

@@ -70,3 +70,12 @@ Para testar a API local pelo terminal, consulte os produtos com a chave de desen
 ```bash
 curl -H "X-API-Key: chave-secreta-api-catalogo" http://localhost:8081/api/produtos
 ```
+
+### Cobertura de Testes — Melhoria Futura
+
+Foi criado no `pom.xml` o perfil Maven `cobertura-80`, que permite validar uma cobertura mínima de **80% das linhas de código**, utilizando o JaCoCo.
+
+O perfil pode ser executado manualmente com o comando:
+
+```bash
+./mvnw clean verify -Pcobertura-80
