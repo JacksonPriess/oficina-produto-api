@@ -52,7 +52,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          # SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }} # Descomente apenas se NÃO estiver usando o SonarCloud
         run: mvn clean verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
 
       - name: Publicar relatório de cobertura
